@@ -1,59 +1,85 @@
 <template>
-<div>
+  <div>
     <h1>Invertibles for Z/nZ</h1>
-<span>{{getAll}}</span>
-  <main class="hello">
-   <select name="" id="" v-model="filter">
-    <option value="all">all</option>
-    <option value="invertible">invertible</option>
-    <option value="non-invertible">non-invertible</option>
-  </select>
-<form @submit.prevent="">
-    <label for="include0">include 0 </label>
-    <input id="include0" type="checkbox" v-model.boolean="include0"/>
-  </form> 
-  <form @submit.prevent="">
-    <label for="n">n = </label>
-    <input id="n" type="number" v-model.number="number"/>
-  </form>
-  <div id="info">
-  <table>
-    <th>element</th>
-    <th>inverse</th>
-    <tr v-if="this.include0">
-      <td>0</td>
-      <td>-</td>
-    </tr>
-     
-    <tr v-if="filter==='all' " v-for="(inverted, element) in pairs">
-      <td>{{element}}</td>
-      <td>{{inverted}}</td>`
-    </tr>
-    <tr v-if="filter==='invertible'" v-for="[inverted, element] in pairs.map((x,index)=>[x,index]).filter(x=>x[0]!=='-')">
-      <td>{{element}}</td>
-      <td>{{inverted}}</td>
-    </tr>
+    <span>{{getAll}}</span>
+    <main class="hello">
+      <div id="options">
+      <form @submit.prevent="">
+        <label for="n">n = </label>
+        <input id="n" type="number" v-model.number="number"/>
+      </form>
+      <form @submit.prevent="">
+        <label for="filter">show:  </label>
+         <select name="" id="filter" v-model="filter">
+          <option value="all">all</option>
+          <option value="invertible">invertible</option>
+          <option value="non-invertible">non-invertible</option>
+          <option value="regular">regular</option>
+          <option value="zero divisor">zero divisor</option>
+        </select>
+      </form>
+      </div>
+      <div id="info">
+      <table>
+        <th :title="filter + ' elements in Z/' + number + 'Z'">element</th>
+        <th :title="'elements b so that a * b % ' + number + ' = 1'">inverse</th>
+        <th :title="'non-zero elements b so that a * b % ' + number + ' = 0'">zero divisor</th>   
+        <tr v-if="filter==='all' " v-for="(inverted, element) in invertibles">
+          <td>{{element}}</td>
+ <td v-if='inverted' :title="'(' + element + ' * ' + inverted + ')' + ' % ' + number + ' = 1'">{{inverted}}</td>
+          <td v-else>-</td>
+          <td v-if='zeroDivisors[element]' 
+              :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}
+          </td>
+          <td v-else>-</td>
+        </tr>
+        <tr v-if="filter==='invertible'" v-for="[inverted, element] in invertibles.map((x,index)=>[x,index]).filter(x=>!x[0])">
+           <td>{{element}}</td>
+ <td v-if='inverted' :title="'(' + element + ' * ' + inverted + ')' + ' % ' + number + ' = 1'">{{inverted}}</td>
+          <td v-else>-</td>
+          <td v-if='zeroDivisors[element]' 
+              :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}
+          </td>
+          <td v-else>-</td>
+        </tr>
+        <tr v-if="filter==='non-invertible'" v-for="[inverted, element] in invertibles.map((x,index)=>[x,index]).filter(x=>x[0])">
+           <td>{{element}}</td>
+ <td v-if='inverted' :title="'(' + element + ' * ' + inverted + ')' + ' % ' + number + ' = 1'">{{inverted}}</td>
+          <td v-else>-</td>
+          <td v-if='zeroDivisors[element]' 
+              :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}
+          </td>
+          <td v-else>-</td>
+        </tr>
+         <tr v-if="filter==='regular'" v-for="[zeroDivisor, element] in zeroDivisors.map((x,index)=>[x,index]).filter(x=>x[0])">
+           <td>{{element}}</td>
+ <td v-if='invertibles[element]' :title="'(' + element + ' * ' + invertibles[element] + ')' + ' % ' + number + ' = 1'">{{invertibles[element]}}</td>
+          <td v-else>-</td>
+          <td v-if='zeroDivisor' 
+              :title="'(' + element + ' * ' + zeroDivisor + ')' + ' % ' + number + ' = 0'">{{zeroDivisor}}
+          </td>
+          <td v-else>-</td>
+        </tr>
+         <tr v-if="filter==='zero divisor'" v-for="[zeroDivisor, element] in zeroDivisors.map((x,index)=>[x,index]).filter(x=>!x[0])">
+           <td>{{element}}</td>
+ <td v-if='invertibles[element]' :title="'(' + element + ' * ' + invertibles[element] + ')' + ' % ' + number + ' = 1'">{{invertibles[element]}}</td>
+          <td v-else>-</td>
+          <td v-if='zeroDivisor' 
+              :title="'(' + element + ' * ' + zeroDivisor + ')' + ' % ' + number + ' = 0'">{{zeroDivisor}}
+          </td>
+          <td v-else>-</td>
+        </tr>
+      </table>
 
-    <tr v-if="filter==='non-invertible'" v-for="[inverted, element] in pairs.map((x,index)=>[x,index]).filter(x=>x[0]==='-')">
-      <td>{{element}}</td>
-      <td>{{inverted}}</td>
-    </tr>
-  </table>
-
-  <div id="more-info">
-  <p>number of invertibles: {{this.pairs.filter((x,index) => x[index + 1] !== '-').length}}</p>
-  <p>number of non-invertibles: 
-  {{
-    this.pairs.filter((x,index) => x[index + 1] === '-').length + this.include0
-  }}
-  </p>
-  <p>invertibles: {{this.pairs.filter((x,index) => x[index + 1] !== '-')}}</p>
-</div>
- </div>
-  
-  </main>
+      <div id="more-info">
+        <p>number of invertibles: {{this.invertibles.filter(x => x).length}}</p>
+        <p>number of non-invertibles: {{this.invertibles.filter(x => !x).length}}</p>
+        <p>number of zero divisors: {{this.zeroDivisors.filter(x => x).length}}</p>
+        <p>number of regulars: {{this.zeroDivisors.filter(x => !x).length}}</p>
+      </div>
+     </div>
+    </main>
   </div>
-
 </template>
 
 <script>
@@ -62,40 +88,43 @@ const app = {
   data () {
     return {
       number: 4,
-      arr: [1, 5, 9],
-      include0: false,
       filter: 'all',
-      pairs: []
+      invertibles: [],
+      zeroDivisors: []
     }
   },
   methods: {
-    test (x) {
-      console.log('test')
-      for (let i = 0; i <= this.number; i++) {
-        if (this.arr.includes(x * i)) {
+    isInvertible (x) {
+      for (let i = 1; i < this.number; i++) {
+        if ((i * x) % this.number === 1) {
           return i
         }
       }
-      return '-'
+      return false
+    },
+    isZeroDivisor (x) {
+      for (let i = 1; i < this.number; i++) {
+        if ((i * x) % this.number === 0) {
+          return i
+        }
+      }
+      return false
     }
   },
   computed: {
-    getNumbers () {
-      console.log('getnumbers')
-      let arr = [1]
-      for (let i = 1; i < this.number; i++) {
-        arr.push(i * this.number + 1)
-      }
-      this.arr = arr
+    getZeroDivisors () {
+      const startTime = new Date()
+      this.zeroDivisors = [...Array(this.number)].map((x, index) => this.isZeroDivisor(index))
+      const endTime = new Date()
+      console.log(`get zero divisors: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     },
     getAll () {
-      this.getNumbers
-      console.log('getall')
-      let all = new Array(this.number)
-      for (let i = 0; i < this.number; i++) {
-        all[i] = this.test(i)
-      }
-      this.pairs = all
+      this.getZeroDivisors
+      this.getOnes
+      const startTime = new Date()
+      this.invertibles = [...Array(this.number)].map((x, index) => this.isInvertible(index))
+      const endTime = new Date()
+      console.log(`get all: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     }
   }
 }
@@ -108,36 +137,39 @@ export default app
     text-align: center;
   }
   main{
-
     display: flex;
     flex-flow: row wrap;
     width: 80%;
     margin: 0 auto;
   }
-  form{
+  #options{
     flex:1 0 100%;
   }
+  form{
+    display: inline-flex;
+    padding-right: .75em;
+  }
+  
   #info{
     margin-top:15px;
     display: flex;
     flex:1;
   }
   input{
-    align-self: flex-start;
     width: 45px;
+  }
+  label{
+    padding-right: .2em
   }
   #more-info{
     flex:1;
     padding-left:2em;
-    border: 2px solid green;
   }
   
   p{
     margin: .5em 0 0 0;
   }
-  select{
-    align-self: flex-start;
-  }
+
   table{
     border: 1px solid black;
     display: inline-block;
