@@ -9,8 +9,8 @@
         <input id="n" type="number" v-model.number="number"/>
       </form>
       <form @submit.prevent="">
-        <label for="filter">show:  </label>
-         <select name="" id="filter" v-model="filter">
+        <label for="currentFilter">show:  </label>
+         <select name="" id="currentFilter" v-model="currentFilter">
           <option value="all">all</option>
           <option value="invertible">invertible</option>
           <option value="non-invertible">non-invertible</option>
@@ -21,56 +21,15 @@
       </div>
       <div id="info">
       <table>
-        <th :title="filter + ' elements in Z/' + number + 'Z'">element</th>
+        <th :title="currentFilter + ' elements in Z/' + number + 'Z'">element</th>
         <th :title="'elements b so that a * b % ' + number + ' = 1'">inverse</th>
-        <th :title="'non-zero elements b so that a * b % ' + number + ' = 0'">zero divisor</th>   
-        <tr v-if="filter==='all' " v-for="(inverted, element) in invertibles">
+        <th :title="'non-zero elements b so that a * b % ' + number + ' = 0'">zero divisor</th>
+        <tr v-for="element in getCurrentElements">
           <td>{{element}}</td>
- <td v-if='inverted' :title="'(' + element + ' * ' + inverted + ')' + ' % ' + number + ' = 1'">{{inverted}}</td>
-          <td v-else>-</td>
-          <td v-if='zeroDivisors[element]' 
-              :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}
-          </td>
-          <td v-else>-</td>
-        </tr>
-        <tr v-if="filter==='invertible'" v-for="[inverted, element] in invertibles.map((x,index)=>[x,index]).filter(x=>!x[0])">
-           <td>{{element}}</td>
- <td v-if='inverted' :title="'(' + element + ' * ' + inverted + ')' + ' % ' + number + ' = 1'">{{inverted}}</td>
-          <td v-else>-</td>
-          <td v-if='zeroDivisors[element]' 
-              :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}
-          </td>
-          <td v-else>-</td>
-        </tr>
-        <tr v-if="filter==='non-invertible'" v-for="[inverted, element] in invertibles.map((x,index)=>[x,index]).filter(x=>x[0])">
-           <td>{{element}}</td>
- <td v-if='inverted' :title="'(' + element + ' * ' + inverted + ')' + ' % ' + number + ' = 1'">{{inverted}}</td>
-          <td v-else>-</td>
-          <td v-if='zeroDivisors[element]' 
-              :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}
-          </td>
-          <td v-else>-</td>
-        </tr>
-         <tr v-if="filter==='regular'" v-for="[zeroDivisor, element] in zeroDivisors.map((x,index)=>[x,index]).filter(x=>x[0])">
-           <td>{{element}}</td>
- <td v-if='invertibles[element]' :title="'(' + element + ' * ' + invertibles[element] + ')' + ' % ' + number + ' = 1'">{{invertibles[element]}}</td>
-          <td v-else>-</td>
-          <td v-if='zeroDivisor' 
-              :title="'(' + element + ' * ' + zeroDivisor + ')' + ' % ' + number + ' = 0'">{{zeroDivisor}}
-          </td>
-          <td v-else>-</td>
-        </tr>
-         <tr v-if="filter==='zero divisor'" v-for="[zeroDivisor, element] in zeroDivisors.map((x,index)=>[x,index]).filter(x=>!x[0])">
-           <td>{{element}}</td>
- <td v-if='invertibles[element]' :title="'(' + element + ' * ' + invertibles[element] + ')' + ' % ' + number + ' = 1'">{{invertibles[element]}}</td>
-          <td v-else>-</td>
-          <td v-if='zeroDivisor' 
-              :title="'(' + element + ' * ' + zeroDivisor + ')' + ' % ' + number + ' = 0'">{{zeroDivisor}}
-          </td>
-          <td v-else>-</td>
-        </tr>
+          <td>{{invertibles[element]||'-'}}</td>
+          <td>{{zeroDivisors[element]||'-'}}</td>
+        </tr>   
       </table>
-
       <div id="more-info">
         <p>number of invertibles: {{this.invertibles.filter(x => x).length}}</p>
         <p>number of non-invertibles: {{this.invertibles.filter(x => !x).length}}</p>
@@ -88,9 +47,10 @@ const app = {
   data () {
     return {
       number: 4,
-      filter: 'all',
+      elements: [],
       invertibles: [],
-      zeroDivisors: []
+      zeroDivisors: [],
+      currentFilter: 'all'
     }
   },
   methods: {
@@ -112,19 +72,42 @@ const app = {
     }
   },
   computed: {
+    getElements () {
+      this.elements = [...Array(this.number)].map((x, index) => index)
+    },
     getZeroDivisors () {
       const startTime = new Date()
-      this.zeroDivisors = [...Array(this.number)].map((x, index) => this.isZeroDivisor(index))
+      this.zeroDivisors = this.elements.map(x => this.isZeroDivisor(x))
       const endTime = new Date()
       console.log(`get zero divisors: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     },
-    getAll () {
-      this.getZeroDivisors
-      this.getOnes
+    getInvertibles () {
       const startTime = new Date()
-      this.invertibles = [...Array(this.number)].map((x, index) => this.isInvertible(index))
+      this.invertibles = this.elements.map(x => this.isInvertible(x))
+      const endTime = new Date()
+      console.log(`get invertibles: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
+    },
+    getAll () {
+      const startTime = new Date()
+      this.getElements
+      this.getInvertibles
+      this.getZeroDivisors
       const endTime = new Date()
       console.log(`get all: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
+    },
+    getCurrentElements () {
+      switch (this.currentFilter) {
+        case 'all':
+          return this.elements
+        case 'invertible':
+          return this.invertibles.reduce((prev, x, index) => x ? prev.concat(index) : prev, [])
+        case 'non-invertible':
+          return this.invertibles.reduce((prev, x, index) => !x ? prev.concat(index) : prev, [])
+        case 'regular':
+          return this.zeroDivisors.reduce((prev, x, index) => !x ? prev.concat(index) : prev, [])
+        case 'zero divisor':
+          return this.zeroDivisors.reduce((prev, x, index) => x ? prev.concat(index) : prev, [])
+      }
     }
   }
 }
