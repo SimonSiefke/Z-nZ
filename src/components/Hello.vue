@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Invertibles for Z/nZ</h1>
+    <h1>Invertibles and Zero divisors for Z/nZ</h1>
     <span>{{getAll}}</span>
     <main class="hello">
       <div id="options">
@@ -26,8 +26,10 @@
         <th :title="'non-zero elements b so that a * b % ' + number + ' = 0'">zero divisor</th>
         <tr v-for="element in getCurrentElements">
           <td>{{element}}</td>
-          <td>{{invertibles[element]||'-'}}</td>
-          <td>{{zeroDivisors[element]||'-'}}</td>
+          <td v-if="invertibles[element]" :title="'(' + element + ' * ' + invertibles[element] + ')' + ' % ' + number + ' = 1'">{{invertibles[element]}}</td>
+          <td v-else>-</td>
+          <td v-if="zeroDivisors[element]" :title="'(' + element + ' * ' + zeroDivisors[element] + ')' + ' % ' + number + ' = 0'">{{zeroDivisors[element]}}</td>
+          <td v-else>-</td>
         </tr>   
       </table>
       <div id="more-info">
@@ -42,16 +44,21 @@
 </template>
 
 <script>
+
 const app = {
   name: 'hello',
   data () {
     return {
       number: 4,
       elements: [],
-      invertibles: [],
+      divisors: [],
       zeroDivisors: [],
+      invertibles: [],
       currentFilter: 'all'
     }
+  },
+  mounted () {
+    this.getAll
   },
   methods: {
     isInvertible (x) {
@@ -73,27 +80,55 @@ const app = {
   },
   computed: {
     getElements () {
+      const startTime = new Date()
       this.elements = [...Array(this.number)].map((x, index) => index)
+      const endTime = new Date()
+      console.log(`\n\ngot elements in: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
+    },
+    getDivisors () {
+      const startTime = new Date()
+      let divisors = []
+      for (let i = 2; i <= this.number / 2; i++) {
+        if (this.number % i === 0) {
+          divisors.push(i)
+        }
+      }
+      divisors.push(this.number - 1)
+      this.divisors = divisors
+      const endTime = new Date()
+      console.log(`got divisors in: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     },
     getZeroDivisors () {
       const startTime = new Date()
-      this.zeroDivisors = this.elements.map(x => this.isZeroDivisor(x))
+      this.zeroDivisors = this.elements.map(x => {
+        for (let divisor of this.divisors) {
+          if (x % divisor === 0) {
+            for (let divisor2 of this.divisors) {
+              if (x * divisor2 % this.number === 0) {
+                return divisor2
+              }
+            }
+          }
+        }
+        return false
+      })
       const endTime = new Date()
-      console.log(`get zero divisors: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
+      console.log(`got zero divisors in: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     },
     getInvertibles () {
       const startTime = new Date()
-      this.invertibles = this.elements.map(x => this.isInvertible(x))
+      this.invertibles = this.zeroDivisors.map((x, index) => x ? false : this.isInvertible(index))
       const endTime = new Date()
-      console.log(`get invertibles: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
+      console.log(`got invertibles in: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     },
     getAll () {
       const startTime = new Date()
       this.getElements
-      this.getInvertibles
+      this.getDivisors
       this.getZeroDivisors
+      this.getInvertibles
       const endTime = new Date()
-      console.log(`get all: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
+      console.log(`got all in: ${Math.floor((endTime - startTime) / 1000)},${(endTime - startTime) % 1000} s`)
     },
     getCurrentElements () {
       switch (this.currentFilter) {
