@@ -1,5 +1,7 @@
 # Z/nZ
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/SimonSiefke/Z-nZ.svg)](https://greenkeeper.io/)
+
 > A Vue.js project
 
 ## Build Setup
